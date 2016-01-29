@@ -1,0 +1,83 @@
+<section>
+      VmInclude:__BASE__/vmiis/Common-Code/master/toolbar/week.html
+      VmInclude:__BASE__/vmiis/Common-Code/master/calendar/week.html
+</section>
+<script>
+    function F__ID(){
+        //--------------------------------------------------------
+        VmInclude:__BASE__/vmiis/Common-Code/master/toolbar/week.js
+        VmInclude:__BASE__/vmiis/Common-Code/master/calendar/week.js
+        VmInclude:__BASE__/vmiis/Common-Code/style/ease-in-out.js
+        //--------------------------------------------------------
+        var record_name=$vm.module_list[$vm.vm['__ID'].name][3];
+        var roster_record_db_pid=$vm.module_list[record_name][0];
+        //--------------------------------------------------------
+        var display=function(){
+            var first_day=$('#D__ID').data('first_day'), last_day=$('#D__ID').data('last_day');
+            var sql="select ID,Author,Information from [FORM-"+roster_record_db_pid+"] where @T1<=DT1 and DT1<=@T2 order by DT1";
+            var req_data={cmd:'query_records',sql:sql,t1:first_day,t2:last_day};
+            $VmAPI.request({data:req_data,callback:function(res){
+                calendar_week(function(d){
+                    var daily_name=$vm.module_list[$vm.vm['__ID'].name][4];
+                    var mid=$vm.module_list[daily_name][0];
+                    var url=$vm.module_list[daily_name][1];
+                    var src=$vm.module_list[daily_name][2];
+                    var param={
+                        name:daily_name,
+                        pid:$vm.id(url+mid),
+                        url:$vm.url(url),
+                        slot:$vm.root_layout_content_slot,
+                        source:src,
+                        op:{day:d}
+                    }
+                    $vm.load_module(param);
+                });
+        		for(var i=0;i<res.records.length;i++){
+    				var id=res.records[i].ID;
+    				var d=res.records[i].Date;
+    				$div=calendar_div(d);
+    				if($div!==undefined)	set_div($div,res,i);
+    			}
+                var top1=$('#calendar__ID').offset().top;
+                $('#calendar__ID').css("height",$(window).height()-top1-$('#'+$vm.root_layout_footer).outerHeight());
+            }});
+        }
+        //--------------------------------------------------------
+        var set_div=function($div,res,i){
+    		var id=res.records[i].ID;
+    		var time=res.records[i].Start_Time;
+    		var name=res.records[i].Staff;
+    		var color=res.records[i].Color;
+    		var author=res.records[i].Author;
+            var duration=parseInt(res.records[i].Duration);
+            var aa=time.split(':');
+			var starthour=parseInt(aa[0])+(parseInt(aa[1])/60);
+    		//var LI="<li><u id=event"+id+" style=cursor:pointer;color:"+color+">"+time+" - "+name+"</u></li>";
+            var marginleft = 100*starthour/24;
+            var LI="<div style='cursor:pointer;margin-bottom:2px;border-radius:3px;padding-left:5px;box-shadow: 3px 3px 2px #888888;margin-left:"+marginleft+"%; width:"+100*duration/24+"%; text-align:left; background-color: "+color+"'>"+name+"</div>";
+    		$div.append(LI);
+    		$div.find('div').data("id",id);
+        	$div.find('div').on('click',function(){
+                var id=$(this).data('id');
+                $vm.g_update_key='__ID';
+                var mid=$vm.module_list[record_name][0];
+                var url=$vm.module_list[record_name][1];
+                var src=$vm.module_list[record_name][2];
+                var param={
+                    name:record_name,
+                    pid:$vm.id(url+mid),
+                    slot:$vm.root_layout_content_slot,
+                    url:$vm.url(url),
+                    source:src,
+                    op:{sql_where:'where id='+id,single:true}
+                }
+                $vm.load_module(param);
+        	});
+    	};
+    	//--------------------------------------------------------
+        $('#D__ID').on('back',display);
+        $('#D__ID').on('display',display);
+        $('#D__ID').on('load',display);
+        //--------------------------------------------------------
+    }
+</script>

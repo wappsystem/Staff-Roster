@@ -1,0 +1,212 @@
+<section>
+      VmInclude:__BASE__/vmiis/Common-Code/toolbar/day.html
+      VmInclude:__BASE__/vmiis/Common-Code/calendar/day.html
+</section>
+<script>
+    function F__ID(){
+        //--------------------------------------------------------
+        VmInclude:__BASE__/vmiis/Common-Code/toolbar/day.js
+        VmInclude:__BASE__/vmiis/Common-Code/style/ease-in-out.js
+        //--------------------------------------------------------
+        var record_name=$vm.module_list[$vm.vm['__ID'].name][3];
+        var roster_record_db_pid=$vm.module_list[record_name][0];
+        //--------------------------------------------------------
+        var display=function(){
+            //$vm.g_update_key='__ID';
+            var sql="select ID,PUID,Author,Information from [FORM-"+roster_record_db_pid+"] where Convert(date,dt1)=@T1";
+		    $VmAPI.request({data:{cmd:'query_records',sql:sql,t1:$('#date__ID').val()},callback:function(res){
+		        render(res);
+		    }});
+        }
+        //--------------------------------------------------------
+        var render=function(c){
+    		var txt="<tr>";
+    		for(var j=0;j<48;j++){
+                var k=j%2;
+                if(k==0) txt+="<th style='text-align:left;cursor:pointer' data-j="+j+">"+vm_pad(j/2%24,2)+"</th>";
+                else txt+="<th style='text-align:left;cursor:pointer' data-j="+j+"></th>";
+    		}
+            for(var j=48;j<72;j++){
+                var k=j%2;
+                if(k==0) txt+="<th style='text-align:left;cursor:pointer;background-color:#eee' data-j="+j+">"+vm_pad(j/2%24,2)+"</th>";
+                else txt+="<th style='text-align:left;cursor:pointer;background-color:#eee' data-j="+j+"></th>";
+    		}
+    		txt+="</tr>";
+    		$('#thead__ID').html('').append(txt);
+            //click for booking
+            $('#thead__ID').find('th').on('click',function(){
+                var j=$(this).attr('data-j');
+                var H=vm_pad(Math.floor(j/2),2);
+                var M=vm_pad(j%2*30,2);
+                var D=$('#date__ID').val();
+                var T=H+':'+M;
+                var mid=$vm.module_list[record_name][0];
+                var url=$vm.module_list[record_name][1];
+                var src=$vm.module_list[record_name][2];
+                var param={
+                    name:record_name,
+                    pid:$vm.id(url+mid),
+                    url:$vm.url(url),
+                    slot:$vm.root_layout_content_slot,
+                    source:src,
+                    op:{date:D,time:T,single:true,new:true}
+                }
+                $vm.load_module(param);
+            })
+    		$('#tbody__ID').html('');
+            //add bookings
+            $('#tbody__ID').html('');
+            for(var i=0;i<c.records.length;i++){
+    			var rid			=c.records[i].ID;
+    			var uid			=c.records[i].PUID;
+    			var staff		=c.records[i].Staff; if(staff==='') staff='No Name';
+    			var date		=c.records[i].Date; date=date_parse(date);
+    			var time		=c.records[i].Start_Time;
+    			var duration_0	=c.records[i].Duration;
+    			var author		=c.records[i].Author;
+                var color		=c.records[i].Color;
+    			//----------------------
+    			var duration	=parseFloat(duration_0);
+    			var num=duration/0.5;
+    			var pos=((parseInt(time.split(':')[0]))*60+parseInt(time.split(':')[1]))/30;
+                txt="<tr>";
+                for(var j=0;j<72;j++){
+                    txt+="<td></td>";
+                }
+                txt+="</tr>";
+                $('#tbody__ID').append(txt);
+                var $tr=$("#tbody__ID tr:last-child");
+                for(var j=0;j<num;j++){
+    				var $cell=$tr.find('td').eq(pos+j);
+    				$cell.off('click');
+    				$cell.css('cursor','default');
+    				$cell.css('background-color',color);
+    				if(j!==0 && j!==num-1){		$cell.css('border-left','0px solid red');	$cell.css('border-right','0px solid red');	}
+    				else if(j===0 && num>1){	$cell.css('border-right','0px solid red');	}
+    				else if(j==num-1 && num>1){	$cell.css('border-left','0px solid red');	}
+    				if(j===0){
+    					$cell.html('<u style=cursor:pointer>'+staff+'</u>');
+    					$cell.find('u').data("rid",rid);
+    					$cell.find('u').data("author",author);
+    					$cell.find('u').on('click',function(){
+    						var rid=$(this).data("rid");
+    						var author=$(this).data("author");
+                            var mid=$vm.module_list[record_name][0];
+                            var url=$vm.module_list[record_name][1];
+                            var src=$vm.module_list[record_name][2];
+                            var param={
+                                name:record_name,
+                                pid:$vm.id(url+mid),
+                                slot:$vm.root_layout_content_slot,
+                                url:$vm.url(url),
+                                source:src,
+                                op:{sql_where:'where id='+rid,single:true}
+                            }
+                            $vm.load_module(param);
+    					})
+    				}
+        		}
+            }
+    	};
+    	//-----------------------------------
+        /*
+        var put_on_click_for_booking=function(){
+    		$('#tbody__ID tr').each(function(){
+    			var id  =$(this).children().eq(0).text();
+    			var uid =$(this).children().eq(1).text();
+    			var car_number  =$(this).children().eq(2).text();
+    			var car_name  =$(this).children().eq(3).text();
+    			var name  =$(this).children().eq(4).text();
+    			$(this).children().eq(4).html('<u>'+name+'</u>');
+    			$(this).children().eq(4).find('u').on('click',function(){
+                    alert(id);
+    			});
+    			for(var j=0;j<24;j++){
+    				var $cell=$(this).children().eq(5+j);
+    				$cell.on('click',{j:j,car_uid:uid,car_number:car_number,car_name:car_name}, on_click_for_new_booking );
+    				$cell.css('cursor','pointer');
+    			}
+    		});
+    	};
+    	//-----------------------------------
+        function on_click_for_new_booking(event){
+    		var date=$('#date__ID').val();
+    		var time=vm_pad((8+Math.floor(event.data.j/2)),2)+":"+vm_pad(30*(event.data.j%2),2);
+            var mid=$vm.module_list[record_name][0];
+            var url=$vm.module_list[record_name][1];
+            var src=$vm.module_list[record_name][2];
+            var param={
+                name:record_name,
+                pid:$vm.id(url+mid),
+                slot:$vm.root_layout_content_slot,
+                url:$vm.url(url),
+                source:src,
+                car_uid:event.data.car_uid,
+                op:{new:1,date:date,time:time,car_number:event.data.car_number, car_name:event.data.car_name,single:true,sql_where:" where Author='"+$vm.user+"'"}
+            }
+            $vm.load_module(param);
+    	}
+    	//-----------------------------------
+        var put_on_bookings=function(c){
+    		for(var i=0;i<c.records.length;i++){
+    			var rid			=c.records[i].ID;
+    			var uid			=c.records[i].PUID;
+    			var contact		=c.records[i].Booked_by; if(contact==='') contact='No Contact';
+    			var date		=c.records[i].Date; date=date_parse(date);
+    			var time		=c.records[i].Time;
+    			var duration_0	=c.records[i].Duration;
+    			var author		=c.records[i].Author;
+    			//----------------------
+    			var duration	=parseFloat(duration_0);
+    			var num=duration/0.5;
+    			var pos=((parseInt(time.split(':')[0])-8)*60+parseInt(time.split(':')[1]))/30;
+    			var $tr=$("#tbody__ID td:nth-child(2)").filter(function() {
+    				return $(this).text()==uid;
+    			}).closest("tr");
+    			for(var j=0;j<num;j++){
+    				var $cell=$tr.find('td').eq(pos+5+j);
+    				$cell.off('click');
+    				$cell.css('cursor','default');
+    				$cell.css('background-color','green');
+    				if(j!==0 && j!==num-1){		$cell.css('border-left','0px solid red');	$cell.css('border-right','0px solid red');	}
+    				else if(j===0 && num>1){	$cell.css('border-right','0px solid red');	}
+    				else if(j==num-1 && num>1){	$cell.css('border-left','0px solid red');	}
+    				if(j===0){
+    					$cell.html('<u style=cursor:pointer>'+contact+'</u>');
+    					$cell.find('u').data("rid",rid);
+    					$cell.find('u').data("author",author);
+    					$cell.find('u').on('click',function(){
+    						var rid=$(this).data("rid");
+    						var author=$(this).data("author");
+
+                            var mid=$vm.module_list[record_name][0];
+                            var url=$vm.module_list[record_name][1];
+                            var src=$vm.module_list[record_name][2];
+                            var param={
+                                name:record_name,
+                                pid:$vm.id(url+mid),
+                                slot:$vm.root_layout_content_slot,
+                                url:$vm.url(url),
+                                source:src,
+                                op:{sql_where:'where id='+rid,single:true}
+                            }
+                            $vm.load_module(param);
+    					})
+    				}
+    			}
+    		}
+        }
+        */
+        $('#D__ID').on('back',display);
+        $('#D__ID').on('display',display);
+        $('#D__ID').on('load',function(){
+            if($vm.vm['__ID'].op.day!==undefined){
+                $('#date__ID').val($vm.vm['__ID'].op.day);
+                $('#date__ID').triggerHandler('change');
+                return;
+            }
+            display();
+        });
+        //--------------------------------------------------------
+    }
+</script>

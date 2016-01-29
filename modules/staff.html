@@ -1,0 +1,51 @@
+<section>
+      VmInclude:__BASE__/vmiis/Common-Code/frame/excel.html
+</section>
+<script>
+    function F__ID(){
+        //-------------------------------------
+        var fields="Image,Staff_ID,Givennames,Surname,Work_Phone,Hoem_Phone,Mobile,Email,Department,Position";
+        fields+=",Submit Date|DateTime,Submitted by|Author,Hidden|Modified";
+        //-------------------------------------
+        VmInclude:__BASE__/vmiis/Common-Code/frame/excel.js
+        VmInclude:__BASE__/vmiis/Common-Code/style/ease-in-out.js
+        //-------------------------------------
+        var set_image_url=function($obj,value,days,modified){
+        	var pid=value.split('-')[0];
+        	var uid=value.split('-')[1];
+        	var filename=value.replace(pid+'-'+uid+'-','');
+        	var p=value;
+        	if($vm.vm['__ID'][p]!==undefined) $obj.attr('src',$vm.vm['__ID'][p]);
+        	else{
+            	$vm.s3_link({pid:pid,uid:uid,filename:filename,days:days.toString(),modified:modified,callback:function(url){
+        	        $vm.vm['__ID'][p]=url;
+        	        $obj.attr('src',url);
+            	}});
+            }
+        };
+        //-------------------------------------
+        columns[0]={data:"Image",width:75,renderer:function(instance, td, row, col, prop, value, cellProperties){
+            if(prop!=="Image") return td;
+            if(value===undefined) value="";
+            if(value===null) value="";
+            if(value==="") td.innerHTML="";
+            else{
+                td.innerHTML="<img height='90' width='75' />";
+                $img=$(td).find('img');
+                var Modified=records[row].Modified;
+                set_image_url($img,value,1,Modified);
+            }
+            return td;
+        }};
+        //-------------------------------------
+        $('#D__ID').on('load',function(){  grid_data(); })
+        //-------------------------------------
+    }
+</script>
+<style>
+    VmInclude:__BASE__/vmiis/Common-Code/toolbar/toolbar_for_excel.css
+    #D__ID{
+        font-size:14px;
+        font-family: Helvetica, Arial, sans-serif;
+    }
+</style>
